@@ -1,7 +1,7 @@
 package frc.robot.subsystems;
 
 import frc.robot.RobotMap;
-import frc.robot.commands.IntakeStop;
+//import frc.robot.commands.IntakeStop;
 import frc.robot.commands.SlowDown;
 
 import edu.wpi.first.wpilibj.command.Subsystem;

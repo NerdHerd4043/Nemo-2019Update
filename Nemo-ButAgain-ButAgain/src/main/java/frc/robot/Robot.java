@@ -13,11 +13,19 @@ import edu.wpi.first.wpilibj.command.Command;
 import edu.wpi.first.wpilibj.command.Scheduler;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+
+import jaci.pathfinder.Pathfinder;
+import jaci.pathfinder.PathfinderFRC;
+import jaci.pathfinder.Trajectory;
+import jaci.pathfinder.followers.EncoderFollower;
+
+//import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import frc.robot.subsystems.DriveTrain;
 import frc.robot.subsystems.Hopper;
 import frc.robot.subsystems.Intake;
+
+import com.kauailabs.navx.frc.AHRS;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -27,6 +35,14 @@ import frc.robot.subsystems.Intake;
  * project.
  */
 public class Robot extends TimedRobot {
+  private static final int k_ticks_per_rev = 20;
+  private static final double k_wheel_diameter = 6.0;
+  private static final double k_max_velocity = 10;  
+
+  private static final String k_path_name = "Straight";
+
+  public static AHRS ahrs;
+
   public static DriveTrain driveTrain;
 	public static Intake intake;
 	public static Hopper hopper;
@@ -57,7 +73,10 @@ public class Robot extends TimedRobot {
    * used for any initialization code.
    */
   @Override
-  public void robotInit() {
+  public void robotInit() { 
+
+    ahrs = new AHRS(SerialPort.Port.kMXP); /* Alternatives:  SPI.Port.kMXP, I2C.Port.kMXP or SerialPort.Port.kUSB */
+
 		prefs = Preferences.getInstance();
 		selectedProfile = prefs.getString("DriverName", "ethan");
 		
@@ -121,6 +140,9 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void autonomousInit() {
+    Trajectory left_trajectory = PathfinderFRC.getTrajectory(k_path_name + ".left");
+    Trajectory right_trajectory = PathfinderFRC.getTrajectory(k_path_name + ".right");
+
     m_autonomousCommand = m_chooser.getSelected();
 
     /*
