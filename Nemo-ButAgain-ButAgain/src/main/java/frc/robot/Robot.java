@@ -13,23 +13,19 @@ import edu.wpi.first.wpilibj.command.Command;
 import edu.wpi.first.wpilibj.command.Scheduler;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.SPI;
 
-// import jaci.pathfinder.Pathfinder;
-// import jaci.pathfinder.PathfinderFRC;
-// import jaci.pathfinder.Trajectory;
-// import jaci.pathfinder.followers.EncoderFollower;
+import jaci.pathfinder.*;
+import jaci.pathfinder.followers.EncoderFollower;
+import jaci.pathfinder.modifiers.TankModifier;
+import edu.wpi.first.wpilibj.Notifier;
 
 //import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
-import frc.robot.subsystems.DriveTrain;
-import frc.robot.subsystems.Hopper;
-import frc.robot.subsystems.Intake;
-
+import frc.robot.subsystems.*;
 import edu.wpi.first.cameraserver.CameraServer;
 
-// import edu.wpi.first.wpilibj.SPI;
-
-// import com.kauailabs.navx.frc.AHRS;
+import com.kauailabs.navx.frc.AHRS;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -43,13 +39,17 @@ public class Robot extends TimedRobot {
   // private static final double k_wheel_diameter = 6.0;
   // private static final double k_max_velocity = 10;  
 
-  // private static final String k_path_name = "Straight";
+  // private static final double wheelbase_width = 0.635;
 
-  // public static AHRS ahrs;
+  private static final String k_path_name = "Straight";
+
+  private Notifier m_follower_notifier;
+
+  public static AHRS navX;
 
   public static DriveTrain driveTrain;
 	public static Intake intake;
-	public static Hopper hopper;
+  public static Hopper hopper;
 	
 	public static DigitalInput arduinoDIOLeft;
 	public static DigitalInput arduinoDIORight;
@@ -62,9 +62,15 @@ public class Robot extends TimedRobot {
 	public static boolean teamColor;
 	
 	public static boolean upDown = true;
-	
-  public int distanceInTicks = 568 * 8;
   
+  public static final int ticksPerRev = 262;
+  public static final int max_velocity = 3;
+
+  public int distanceInTicks = 568 * 8;
+
+  EncoderFollower left;
+  EncoderFollower right;
+
   Preferences prefs;
 
   public static OI m_oi;
@@ -79,7 +85,8 @@ public class Robot extends TimedRobot {
   @Override
   public void robotInit() { 
 
-    // ahrs = new AHRS(SPI.Port.kMXP); /* Alternatives:  SPI.Port.kMXP, I2C.Port.kMXP or SerialPort.Port.kUSB */
+
+    navX = new AHRS(SPI.Port.kMXP); /* Alternatives:  SPI.Port.kMXP, I2C.Port.kMXP or SerialPort.Port.kUSB */
 
 		prefs = Preferences.getInstance();
 		selectedProfile = prefs.getString("DriverName", "ethan");
@@ -146,8 +153,44 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void autonomousInit() {
-    // Trajectory left_trajectory = PathfinderFRC.getTrajectory(k_path_name + ".left");
-    // Trajectory right_trajectory = PathfinderFRC.getTrajectory(k_path_name + ".right");
+    // 3 Waypoints
+    // Waypoint[] points = new Waypoint[] {
+    //   new Waypoint(-4, -1, Pathfinder.d2r(-45)),      // Waypoint @ x=-4, y=-1, exit angle=-45 degrees
+    //   new Waypoint(-2, -2, 0),                        // Waypoint @ x=-2, y=-2, exit angle=0 radians
+    //   new Waypoint(0, 0, 0)                           // Waypoint @ x=0, y=0,   exit angle=0 radians
+    // };
+
+    /* 
+      Create the Trajectory Configuration
+    
+      Arguments:
+      Fit Method:          HERMITE_CUBIC or HERMITE_QUINTIC
+      Sample Count:       SAMPLES_HIGH (100 000)
+                          SAMPLES_LOW  (10 000)
+                          SAMPLES_FAST (1 000)
+      Time Step:           0.05 Seconds
+      Max Velocity:        1.7 m/s
+      Max Acceleration:    2.0 m/s/s
+      Max Jerk:            60.0 m/s/s/s
+    */
+
+    // Trajectory.Config config = new Trajectory.Config(Trajectory.FitMethod.HERMITE_CUBIC, Trajectory.Config.SAMPLES_HIGH, 0.05, 1.7, 2.0, 60.0);
+
+    // Generate the trajectory
+    Trajectory trajectory = PathfinderFRC.getTrajectory(k_path_name + ".pf1.csv");
+    TankModifier modifier = new TankModifier(trajectory).modify(0.5);
+
+    EncoderFollower left = new EncoderFollower(modifier.getLeftTrajectory());
+      left.configureEncoder(RobotMap.motorBL.getSelectedSensorPosition(), ticksPerRev, 0.1524);
+      left.configurePIDVA(1.0, 0.0, 0.0, 1 / max_velocity, 0);
+
+    EncoderFollower right = new EncoderFollower(modifier.getRightTrajectory());
+      right.configureEncoder(RobotMap.motorBL.getSelectedSensorPosition(), ticksPerRev, 0.1524);
+      right.configurePIDVA(1.0, 0.0, 0.0, 1 / max_velocity, 0);
+
+   
+    m_follower_notifier = new Notifier(this::followPath);
+    m_follower_notifier.startPeriodic(trajectory.get(0).dt);
 
     m_autonomousCommand = m_chooser.getSelected();
 
@@ -168,6 +211,29 @@ public class Robot extends TimedRobot {
 		RobotMap.motorBR.setSelectedSensorPosition(0, 0, 10);
 		RobotMap.motorBL.setSelectedSensorPosition(0, 0, 10);
   }
+
+  private void followPath() {
+
+    if (left.isFinished() || right.isFinished()) {
+      m_follower_notifier.stop();
+    } else {
+      double l = left.calculate(RobotMap.motorBL.getSelectedSensorPosition());
+      double r = right.calculate(RobotMap.motorBR.getSelectedSensorPosition());
+  
+      double gyro_heading = navX.getAngle();    // Assuming the gyro is giving a value in degrees
+      double desired_heading = Pathfinder.r2d(left.getHeading());  // Should also be in degrees
+  
+      double angleDifference = Pathfinder.boundHalfDegrees(desired_heading - gyro_heading);
+      double turn = 0.8 * (-1.0/80.0) * angleDifference;
+  
+  
+      driveTrain.diffDrive.tankDrive(l + turn, r - turn);
+      // setLeftMotors(l + turn);
+      // setRightMotors(r - turn);
+    }
+     
+  }
+
 
   void autoRoutineStraight() {
 		/* for (i in 1..25) {
