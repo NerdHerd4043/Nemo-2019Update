@@ -63,21 +63,22 @@ public class DriveTrain extends Subsystem {
 	}
 	public void drive(Joystick joy) {
 		inputSpeed = -joy.getRawAxis(1);// * maxSpeed;
-		inputTurn = joy.getRawAxis(4);// * maxTurn;
-		drive(inputSpeed, inputTurn - .1);
+		inputTurn = joy.getRawAxis(4);// * maxTurn; 	//For arcade drive
+		// inputTurn = -joy.getRawAxis(5);				//For tank drive
+		drive(inputSpeed, inputTurn);
 	}
-	
-	/*public void drive(double left, double right) {
-		if (arcadeTank) {
-			diffDrive.arcadeDrive(left, right);
-		} else {
-			diffDrive.tankDrive(left, right);
-		}
-	}*/
 	
 	public void drive(double left, double right) {
-		diffDrive.arcadeDrive(left, right);
+		if (arcadeTank) {
+			diffDrive.arcadeDrive(left, right, true);
+		} else {
+			diffDrive.tankDrive(left * .75, right * .75, true);
+		}
 	}
+	
+	// public void drive(double left, double right) {
+	// 	diffDrive.arcadeDrive(left, right);
+	// }
 	
     public void initDefaultCommand() {
         // Set the default command for a subsystem here.
