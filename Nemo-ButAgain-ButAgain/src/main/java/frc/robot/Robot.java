@@ -18,7 +18,7 @@ import edu.wpi.first.wpilibj.SPI;
 import jaci.pathfinder.*;
 import jaci.pathfinder.followers.EncoderFollower;
 import jaci.pathfinder.modifiers.TankModifier;
-import edu.wpi.first.wpilibj.Notifier;
+// import edu.wpi.first.wpilibj.Notifier;
 
 //import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -41,9 +41,9 @@ public class Robot extends TimedRobot {
 
   // private static final double wheelbase_width = 0.635;
 
-  private static final String k_path_name = "Straight";
+  // private static final String k_path_name = "Straight";
 
-  private Notifier m_follower_notifier;
+  // private Notifier m_follower_notifier;
 
   public static AHRS navX;
 
@@ -70,6 +70,8 @@ public class Robot extends TimedRobot {
 
   EncoderFollower left;
   EncoderFollower right;
+  Trajectory trajectory;
+  TankModifier modifier;
 
   Preferences prefs;
 
@@ -84,6 +86,18 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotInit() { 
+    // Generate the trajectory
+    
+    // Trajectory trajectory = PathfinderFRC.getTrajectory("Straight.pf1.csv");
+    // TankModifier modifier = new TankModifier(trajectory).modify(0.5);
+
+    // EncoderFollower left = new EncoderFollower(modifier.getLeftTrajectory());
+    //   left.configureEncoder(RobotMap.motorBL.getSelectedSensorPosition(), ticksPerRev, 0.1524);
+    //   left.configurePIDVA(1.0, 0.0, 0.0, 1 / max_velocity, 0);
+
+    // EncoderFollower right = new EncoderFollower(modifier.getRightTrajectory());
+    //   right.configureEncoder(RobotMap.motorBL.getSelectedSensorPosition(), ticksPerRev, 0.1524);
+    //   right.configurePIDVA(1.0, 0.0, 0.0, 1 / max_velocity, 0);
 
 
     navX = new AHRS(SPI.Port.kMXP); /* Alternatives:  SPI.Port.kMXP, I2C.Port.kMXP or SerialPort.Port.kUSB */
@@ -154,11 +168,11 @@ public class Robot extends TimedRobot {
   @Override
   public void autonomousInit() {
     // 3 Waypoints
-    // Waypoint[] points = new Waypoint[] {
-    //   new Waypoint(-4, -1, Pathfinder.d2r(-45)),      // Waypoint @ x=-4, y=-1, exit angle=-45 degrees
-    //   new Waypoint(-2, -2, 0),                        // Waypoint @ x=-2, y=-2, exit angle=0 radians
-    //   new Waypoint(0, 0, 0)                           // Waypoint @ x=0, y=0,   exit angle=0 radians
-    // };
+    Waypoint[] points = new Waypoint[] {
+      new Waypoint(0, 0, 0),      // Waypoint @ x=-4, y=-1, exit angle=-45 degrees
+      new Waypoint(10, 10, 90),                        // Waypoint @ x=-2, y=-2, exit angle=0 radians
+      // Waypoint @ x=0, y=0,   exit angle=0 radians
+    };
 
     /* 
       Create the Trajectory Configuration
@@ -174,31 +188,38 @@ public class Robot extends TimedRobot {
       Max Jerk:            60.0 m/s/s/s
     */
 
-    // Trajectory.Config config = new Trajectory.Config(Trajectory.FitMethod.HERMITE_CUBIC, Trajectory.Config.SAMPLES_HIGH, 0.05, 1.7, 2.0, 60.0);
-
-    // Generate the trajectory
-    Trajectory trajectory = PathfinderFRC.getTrajectory(k_path_name + ".pf1.csv");
-    TankModifier modifier = new TankModifier(trajectory).modify(0.5);
-
-    EncoderFollower left = new EncoderFollower(modifier.getLeftTrajectory());
-      left.configureEncoder(RobotMap.motorBL.getSelectedSensorPosition(), ticksPerRev, 0.1524);
-      left.configurePIDVA(1.0, 0.0, 0.0, 1 / max_velocity, 0);
-
-    EncoderFollower right = new EncoderFollower(modifier.getRightTrajectory());
-      right.configureEncoder(RobotMap.motorBL.getSelectedSensorPosition(), ticksPerRev, 0.1524);
-      right.configurePIDVA(1.0, 0.0, 0.0, 1 / max_velocity, 0);
-
+      
+    
+    Trajectory.Config config = new Trajectory.Config(Trajectory.FitMethod.HERMITE_CUBIC, Trajectory.Config.SAMPLES_HIGH, 0.05, 1.7, 2.0, 60.0);
    
-    m_follower_notifier = new Notifier(this::followPath);
-    m_follower_notifier.startPeriodic(trajectory.get(0).dt);
+    trajectory = Pathfinder.generate(points, config);
+    modifier = new TankModifier(trajectory).modify(0.5);
+
+    left = new EncoderFollower(modifier.getLeftTrajectory());
+      left.configureEncoder(RobotMap.motorBL.getSelectedSensorPosition(), ticksPerRev, 0.1524);
+      left.configurePIDVA(0.005, 0.8, 0.0, 1 / max_velocity, 0);
+
+    right = new EncoderFollower(modifier.getRightTrajectory());
+      right.configureEncoder(RobotMap.motorBL.getSelectedSensorPosition(), ticksPerRev, 0.1524);
+      right.configurePIDVA(0.005, 0.8, 0.0, 1 / max_velocity, 0);
+
+
+    // m_follower_notifier = new Notifier(this::followPath);
+    // m_follower_notifier.startPeriodic(trajectory.get(0).dt);
 
     m_autonomousCommand = m_chooser.getSelected();
 
     /*
-     * String autoSelected = SmartDashboard.getString("Auto Selector",
-     * "Default"); switch(autoSelected) { case "My Auto": autonomousCommand
-     * = new MyAutoCommand(); break; case "Default Auto": default:
-     * autonomousCommand = new ExampleCommand(); break; }
+     * String autoSelected = SmartDashboard.getString("Auto Selector","Default");
+     * switch(autoSelected) { 
+     * case "My Auto": 
+     *  autonomousCommand = new MyAutoCommand(); 
+     *  break; 
+     * case "Default Auto": 
+     * default:
+     *  autonomousCommand = new ExampleCommand(); 
+     *  break;
+     * }
      */
 
     // schedule the autonomous command (example)
@@ -214,9 +235,10 @@ public class Robot extends TimedRobot {
 
   private void followPath() {
 
-    if (left.isFinished() || right.isFinished()) {
-      m_follower_notifier.stop();
-    } else {
+    // if (left.isFinished() || right.isFinished()) {
+    //   m_follower_notifier.stop();
+    // } else {
+      intake.stopAll();
       double l = left.calculate(RobotMap.motorBL.getSelectedSensorPosition());
       double r = right.calculate(RobotMap.motorBR.getSelectedSensorPosition());
   
@@ -225,12 +247,15 @@ public class Robot extends TimedRobot {
   
       double angleDifference = Pathfinder.boundHalfDegrees(desired_heading - gyro_heading);
       double turn = 0.8 * (-1.0/80.0) * angleDifference;
-  
-  
+
+      System.out.println("l = " + l);
+      System.out.println("r = " + r);
+
+      
       driveTrain.diffDrive.tankDrive(l + turn, r - turn);
       // setLeftMotors(l + turn);
       // setRightMotors(r - turn);
-    }
+    // }
      
   }
 
@@ -272,7 +297,8 @@ public class Robot extends TimedRobot {
   public void autonomousPeriodic() {
     Scheduler.getInstance().run();
 
-    autoRoutineStraight();
+    followPath();
+    // autoRoutineStraight();
   }
 
   @Override
