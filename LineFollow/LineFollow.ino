@@ -14,6 +14,10 @@ bool rightTriggered = false;
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
+  pinMode(leftOutPin, OUTPUT);
+  pinMode(rightOutPin, OUTPUT);
+  digitalWrite(leftOutPin, LOW);
+  digitalWrite(rightOutPin, LOW);
 }
 
 void loop() {
@@ -27,22 +31,23 @@ void loop() {
 //  Serial.println(leftReading);
 
   if (leftTriggered && rightTriggered) {
-    if (rightReading > 490) {
+    if (rightReading > 900) {
       digitalWrite(rightOutPin, HIGH);
       digitalWrite(leftOutPin, LOW);
-//      Serial.print("R:");
-//      Serial.println(rightReading);
-    } else if (leftReading > 550) {
+      Serial.print("R:");
+      Serial.println(rightReading);
+    } else if (leftReading > 800) {
       digitalWrite(rightOutPin, LOW);
       digitalWrite(leftOutPin, HIGH);
-//      Serial.print("L:");
-//      Serial.println(leftReading);
+      Serial.print("L:");
+      Serial.println(leftReading);
     }
   } else if (rightReading > 490) {
     rightTriggered = true;
-//    Serial.println("Right Triggered");
+    Serial.println("Right Triggered");
   } else if (leftReading > 550) {
     leftTriggered = true;
-//    Serial.println("Left Triggered");
+    Serial.println("Left Triggered");
   }
+//  digitalWrite(5, HIGH);
 }
