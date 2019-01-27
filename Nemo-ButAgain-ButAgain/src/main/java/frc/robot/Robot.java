@@ -200,14 +200,18 @@ public class Robot extends TimedRobot {
   }
   
   void autoRoutineLineFollow() {
-    while(true) {
-      if (arduinoDIOLeft.get()) {
-        driveTrain.drive(.25, -.25);
-      } else if (arduinoDIORight.get()) {
-        driveTrain.drive(.25, .25);
-      } else {
-        driveTrain.drive(.25, 0);
-      }
+    // System.out.println("l = " + arduinoDIOLeft.get());
+    // System.out.println("r = " + arduinoDIORight.get());
+
+    if (arduinoDIOLeft.get()) {
+      driveTrain.diffDrive.arcadeDrive(.5, -.25);
+      System.out.println("turn left");
+    } else if (arduinoDIORight.get()) {
+      driveTrain.diffDrive.arcadeDrive(.5, .25);
+      System.out.println("turn right");
+    } else {
+      driveTrain.diffDrive.arcadeDrive(.7, 0);
+      System.out.println("not turning");
     }
   }
 
@@ -218,6 +222,7 @@ public class Robot extends TimedRobot {
   public void autonomousPeriodic() {
     Scheduler.getInstance().run();
 
+    intake.stopAll();
     //autoRoutineStraight();
     autoRoutineLineFollow();
   }
