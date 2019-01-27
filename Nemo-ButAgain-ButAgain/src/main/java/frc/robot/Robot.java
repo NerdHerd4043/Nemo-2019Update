@@ -197,7 +197,19 @@ public class Robot extends TimedRobot {
 //				driveTrain.diffDrive.arcadeDrive(.5, diff);
 //			}
 		}
-	}
+  }
+  
+  void autoRoutineLineFollow() {
+    while(true) {
+      if (arduinoDIOLeft.get()) {
+        driveTrain.drive(.25, -.25);
+      } else if (arduinoDIORight.get()) {
+        driveTrain.drive(.25, .25);
+      } else {
+        driveTrain.drive(.25, 0);
+      }
+    }
+  }
 
   /**
    * This function is called periodically during autonomous.
@@ -206,7 +218,8 @@ public class Robot extends TimedRobot {
   public void autonomousPeriodic() {
     Scheduler.getInstance().run();
 
-    autoRoutineStraight();
+    //autoRoutineStraight();
+    autoRoutineLineFollow();
   }
 
   @Override
