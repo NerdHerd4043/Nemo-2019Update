@@ -204,13 +204,13 @@ public class Robot extends TimedRobot {
     // System.out.println("r = " + arduinoDIORight.get());
 
     if (arduinoDIOLeft.get()) {
-      driveTrain.diffDrive.arcadeDrive(.5, -.25);
+      // driveTrain.diffDrive.arcadeDrive(.5, -.25);
       System.out.println("turn left");
     } else if (arduinoDIORight.get()) {
-      driveTrain.diffDrive.arcadeDrive(.5, .25);
+      // driveTrain.diffDrive.arcadeDrive(.5, .25);
       System.out.println("turn right");
     } else {
-      driveTrain.diffDrive.arcadeDrive(.7, 0);
+      // driveTrain.diffDrive.arcadeDrive(.7, 0);
       System.out.println("not turning");
     }
   }
