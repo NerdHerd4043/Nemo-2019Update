@@ -25,27 +25,27 @@ void loop() {
   rightReading = analogRead(rSensor);
   leftReading = analogRead(lSensor);
 
-//  Serial.print("R:");
-//  Serial.print(rightReading);
-//  Serial.print(" L:");
-//  Serial.println(leftReading);
+  Serial.print("R:");
+  Serial.print(rightReading);
+  Serial.print(" L:");
+  Serial.println(leftReading);
 
   if (leftTriggered && rightTriggered) {
-    if (rightReading > 900) {
+    if (rightReading > 475) {
       digitalWrite(rightOutPin, HIGH);
       digitalWrite(leftOutPin, LOW);
       Serial.print("R:");
       Serial.println(rightReading);
-    } else if (leftReading > 800) {
+    } else if (leftReading > 625) {
       digitalWrite(rightOutPin, LOW);
       digitalWrite(leftOutPin, HIGH);
       Serial.print("L:");
       Serial.println(leftReading);
     }
-  } else if (rightReading > 490) {
+  } else if (rightReading > 475) {
     rightTriggered = true;
     Serial.println("Right Triggered");
-  } else if (leftReading > 550) {
+  } else if (leftReading > 625) {
     leftTriggered = true;
     Serial.println("Left Triggered");
   }
