@@ -2,7 +2,7 @@ package frc.robot.subsystems;
 
 import frc.robot.RobotMap;
 import frc.robot.commands.Drive;
-//import frc.robot.Robot;
+import frc.robot.Robot;
 
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.command.Subsystem;
@@ -25,6 +25,7 @@ public class DriveTrain extends Subsystem {
 //	String profileSelected = Robot.selectedProfile;
 	String profileSelected = "ethan";
 	
+
 	public DriveTrain() {
 		super();
 		diffDrive = new DifferentialDrive(RobotMap.motorFL, RobotMap.motorFR);
@@ -61,18 +62,27 @@ public class DriveTrain extends Subsystem {
 //		}
 //			
 	}
+
+	public void setDriveMode(boolean mode) {
+		arcadeTank = mode;
+	}
+
 	public void drive(Joystick joy) {
 		inputSpeed = -joy.getRawAxis(1);// * maxSpeed;
-		inputTurn = joy.getRawAxis(4);// * maxTurn; 	//For arcade drive
-		// inputTurn = -joy.getRawAxis(5);				//For tank drive
+
+		if (arcadeTank) {
+			inputTurn = joy.getRawAxis(4);// * maxTurn; 	//For arcade drive
+		} else {
+			inputTurn = -joy.getRawAxis(5);				//For tank drive
+		} 
 		drive(inputSpeed, inputTurn);
 	}
 	
 	public void drive(double left, double right) {
 		if (arcadeTank) {
-			diffDrive.arcadeDrive(left, right, true);
+			diffDrive.arcadeDrive(left * Robot.arcadeSpeed.getDouble(1.0), right * Robot.arcadeTurn.getDouble(1.0), Robot.squaredIn.getBoolean(true));
 		} else {
-			diffDrive.tankDrive(left * .75, right * .75, true);
+			diffDrive.tankDrive(left * Robot.tankLeft.getDouble(1.0), right * Robot.tankRight.getDouble(1.0), Robot.squaredIn.getBoolean(true));
 		}
 	}
 	

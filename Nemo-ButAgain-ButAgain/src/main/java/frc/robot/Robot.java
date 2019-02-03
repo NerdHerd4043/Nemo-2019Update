@@ -11,25 +11,25 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.command.Command;
 import edu.wpi.first.wpilibj.command.Scheduler;
+import edu.wpi.first.wpilibj.shuffleboard.*;
 import edu.wpi.first.wpilibj.DigitalInput;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.*;
 
 // import jaci.pathfinder.Pathfinder;
 // import jaci.pathfinder.PathfinderFRC;
 // import jaci.pathfinder.Trajectory;
 // import jaci.pathfinder.followers.EncoderFollower;
 
-//import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-
-import frc.robot.subsystems.DriveTrain;
-import frc.robot.subsystems.Hopper;
-import frc.robot.subsystems.Intake;
+import frc.robot.subsystems.*;
 
 import edu.wpi.first.cameraserver.CameraServer;
+// import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableEntry;
+import edu.wpi.first.wpilibj.SPI;
 
-// import edu.wpi.first.wpilibj.SPI;
+import java.util.Map;
 
-// import com.kauailabs.navx.frc.AHRS;
+import com.kauailabs.navx.frc.AHRS;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -45,7 +45,9 @@ public class Robot extends TimedRobot {
 
   // private static final String k_path_name = "Straight";
 
-  // public static AHRS ahrs;
+  public static AHRS ahrs;
+
+  ShuffleboardTab tab;
 
   public static DriveTrain driveTrain;
 	public static Intake intake;
@@ -53,7 +55,8 @@ public class Robot extends TimedRobot {
 	
 	public static DigitalInput arduinoDIOLeft;
 	public static DigitalInput arduinoDIORight;
-	
+  
+  public static boolean driveMode;
 	public static boolean ballColorLeft;
 	public static boolean ballColorRight;
 	
@@ -67,6 +70,13 @@ public class Robot extends TimedRobot {
   
   Preferences prefs;
 
+  public static NetworkTableEntry arcadeSpeed;
+  public static NetworkTableEntry arcadeTurn;
+  public static NetworkTableEntry tankLeft;
+  public static NetworkTableEntry tankRight;
+  public static NetworkTableEntry squaredIn;
+  public static NetworkTableEntry arcadeDrive;
+
   public static OI m_oi;
 
   Command m_autonomousCommand;
@@ -79,12 +89,86 @@ public class Robot extends TimedRobot {
   @Override
   public void robotInit() { 
 
-    // ahrs = new AHRS(SPI.Port.kMXP); /* Alternatives:  SPI.Port.kMXP, I2C.Port.kMXP or SerialPort.Port.kUSB */
+    ahrs = new AHRS(SPI.Port.kMXP); /* Alternatives:  SPI.Port.kMXP, I2C.Port.kMXP or SerialPort.Port.kUSB */
 
-		prefs = Preferences.getInstance();
-		selectedProfile = prefs.getString("DriverName", "ethan");
-    
+    prefs = Preferences.getInstance();
+    prefs.putString("DriverName", "nick");
+    selectedProfile = prefs.getString("DriverName", "ethan");
+
+    ShuffleboardTab shuffTab = Shuffleboard.getTab("Drive");
+
+    // shuffTab
+    //   .add("Max Speed", 1)
+    //   .withWidget(BuiltInWidgets.kNumberSlider)
+    //   .withProperties(Map.of("min", 0, "max", 1)) // specify widget properties here
+    //   .getEntry();
+
+    arcadeSpeed = shuffTab
+      .getLayout("ArcadeTuner", BuiltInLayouts.kList)
+      .withSize(2, 2)
+      .withPosition(0, 0)
+      .withProperties(Map.of("label position", "TOP"))
+      .add("Max Speed", 1)
+      .withWidget(BuiltInWidgets.kNumberSlider)
+      .withProperties(Map.of("min", 0, "max", 1))
+      .getEntry();
+
+    arcadeTurn = shuffTab
+      .getLayout("ArcadeTuner", BuiltInLayouts.kList)
+      .withSize(2, 2)
+      .withPosition(0, 0)
+      .withProperties(Map.of("label position", "TOP"))
+      .add("Max Turn", 1) 
+      .withWidget(BuiltInWidgets.kNumberSlider)
+      .withProperties(Map.of("min", 0, "max", 1))
+      .getEntry();
+
+    tankLeft = shuffTab
+      .getLayout("TankTuner", BuiltInLayouts.kList)
+      .withSize(2, 2)
+      .withPosition(2, 0)
+      .withProperties(Map.of("label position", "TOP"))
+      .add("Max Left", 1) 
+      .withWidget(BuiltInWidgets.kNumberSlider)
+      .withProperties(Map.of("min", 0, "max", 1))
+      .getEntry();
+
+    tankRight = shuffTab  
+      .getLayout("TankTuner", BuiltInLayouts.kList)
+      .withSize(2, 2)
+      .withPosition(2, 0)
+      .withProperties(Map.of("label position", "TOP"))
+      .add("Max Right", 1) 
+      .withWidget(BuiltInWidgets.kNumberSlider)
+      .withProperties(Map.of("min", 0, "max", 1))
+      .getEntry();
+
+    squaredIn = shuffTab
+      .getLayout("Settings", BuiltInLayouts.kList)
+      .withSize(2, 1)
+      .withPosition(0, 2)
+      .withProperties(Map.of("labelposition", "HIDDEN"))
+      .add("Squared Inputs", true)
+      .withWidget(BuiltInWidgets.kToggleButton)
+      .getEntry();
+
+      arcadeDrive = shuffTab
+      .getLayout("Settings", BuiltInLayouts.kList)
+      .withSize(2, 1)
+      .withPosition(0, 2)
+      .withProperties(Map.of("label position", "HIDDEN"))
+      .add("Arcade Drive", true) 
+      .withWidget(BuiltInWidgets.kToggleButton)
+      .getEntry();
+
+    driveMode = arcadeDrive.getBoolean(true);
+
     CameraServer.getInstance().startAutomaticCapture();
+
+    // tab = Shuffleboard.getTab("SmartDashboard");
+    // NetworkTableEntry maxSpeed =
+    //   tab.add("Max Speed", 1)
+    //      .getEntry(); 
 
 		driveTrain = new DriveTrain();
 		intake = new Intake(); 
@@ -100,7 +184,7 @@ public class Robot extends TimedRobot {
     RobotMap.motorBR.setSelectedSensorPosition(0, 0, 10);
     
 
-    //m_chooser.setDefaultOption("Default Auto", new ExampleCommand());
+    // m_chooser.setDefaultOption("Default Auto", new ExampleCommand());
     // chooser.addOption("My Auto", new MyAutoCommand());
     //SmartDashboard.putData("Auto mode", m_chooser);
   }
@@ -115,9 +199,20 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotPeriodic() {
+    if (driveMode != arcadeDrive.getBoolean(true)) {
+      driveMode = arcadeDrive.getBoolean(true);
+      Robot.driveTrain.setDriveMode(driveMode);
+      System.out.println("ArcadeDrive = " + driveMode);
+    }
+
+    System.out.println();
+    SmartDashboard.putData("Gyro", ahrs);
+    SmartDashboard.putNumber("Left Encoder", RobotMap.motorBL.getSelectedSensorPosition(0));
+    SmartDashboard.putNumber("Right Encoder", RobotMap.motorBR.getSelectedSensorPosition(0));
+   
   }
 
-  /**
+  /** 
    * This function is called once each time the robot enters Disabled mode.
    * You can use it to reset any subsystem information you want to clear when
    * the robot is disabled.
@@ -201,7 +296,7 @@ public class Robot extends TimedRobot {
   
   void autoRoutineLineFollow() {
     // System.out.println("l = " + arduinoDIOLeft.get());
-    // System.out.println("r = " + arduinoDIORight.get());
+    // System.out.println("r = " + arduinoDIORight.get());  
 
     if (arduinoDIOLeft.get()) {
       driveTrain.diffDrive.arcadeDrive(.5, -.25);
