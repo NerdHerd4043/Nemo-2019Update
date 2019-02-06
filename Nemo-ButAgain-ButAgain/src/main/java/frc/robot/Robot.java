@@ -12,7 +12,7 @@ import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.command.Command;
 import edu.wpi.first.wpilibj.command.Scheduler;
 import edu.wpi.first.wpilibj.shuffleboard.*;
-import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.AnalogInput;
 import edu.wpi.first.wpilibj.smartdashboard.*;
 
 // import jaci.pathfinder.Pathfinder;
@@ -52,9 +52,6 @@ public class Robot extends TimedRobot {
   public static DriveTrain driveTrain;
 	public static Intake intake;
 	public static Hopper hopper;
-	
-	public static DigitalInput arduinoDIOLeft;
-	public static DigitalInput arduinoDIORight;
   
   public static boolean driveMode;
 	public static boolean ballColorLeft;
@@ -67,6 +64,16 @@ public class Robot extends TimedRobot {
 	public static boolean upDown = true;
 	
   public int distanceInTicks = 568 * 8;
+
+  public static AnalogInput lineFollowLeft;
+  public static AnalogInput lineFollowRight;
+
+  int rawReadLeft;
+  int rawReadRight;
+  int rightThreshold = 3500;
+  int leftThreshold = 3500;
+  boolean leftTriggered = false;
+  boolean rightTriggered = false;
   
   Preferences prefs;
 
@@ -170,11 +177,12 @@ public class Robot extends TimedRobot {
     //   tab.add("Max Speed", 1)
     //      .getEntry(); 
 
+    lineFollowLeft = new AnalogInput(2);
+    lineFollowRight = new AnalogInput(1);
+
 		driveTrain = new DriveTrain();
 		intake = new Intake(); 
 		hopper = new Hopper();
-		arduinoDIOLeft = new DigitalInput(0);
-		arduinoDIORight = new DigitalInput(1);
 
     m_oi = new OI();
 
@@ -295,19 +303,26 @@ public class Robot extends TimedRobot {
   }
   
   void autoRoutineLineFollow() {
-    // System.out.println("l = " + arduinoDIOLeft.get());
-    // System.out.println("r = " + arduinoDIORight.get());  
+    rawReadLeft = lineFollowLeft.getValue();
+    rawReadRight = lineFollowRight.getValue();
 
-    if (arduinoDIOLeft.get()) {
-      // driveTrain.diffDrive.arcadeDrive(.5, -.25);
-      System.out.println("turn left");
-    } else if (arduinoDIORight.get()) {
-      // driveTrain.diffDrive.arcadeDrive(.5, .25);
-      System.out.println("turn right");
-    } else {
-      // driveTrain.diffDrive.arcadeDrive(.7, 0);
-      System.out.println("not turning");
-    }
+
+    // if (leftTriggered && rightTriggered) {
+    //   if (rawReadRight > rightThreshold) {
+    //     driveTrain.diffDrive.arcadeDrive(.5, .5);
+    //   } else if (rawReadLeft > leftThreshold) {
+    //     driveTrain.diffDrive.arcadeDrive(.5, -.5);
+    //   } else {
+    //     driveTrain.diffDrive.arcadeDrive(.75, 0);
+    //   }
+    // } else if (rawReadRight > rightThreshold) {
+    //   rightTriggered = true;
+    // } if (rawReadLeft > leftThreshold) {
+    //   leftTriggered = true;
+    // }
+
+    System.out.print("L: " + rawReadLeft);
+    System.out.println("R: " + rawReadRight);
   }
 
   /**
@@ -345,9 +360,6 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopPeriodic() {
     Scheduler.getInstance().run();
-
-    ballColorLeft = arduinoDIOLeft.get();
-		ballColorRight = arduinoDIORight.get();
 		
 //		if (teamColor) {				//If the wanted color is red
 //			if (ballColorLeft){			//If the actual left color is red
