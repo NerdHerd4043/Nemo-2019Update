@@ -70,8 +70,8 @@ public class Robot extends TimedRobot {
 
   int rawReadLeft;
   int rawReadRight;
-  int rightThreshold = 3500;
-  int leftThreshold = 3500;
+  int rightThreshold = 1700;
+  int leftThreshold = 2600;
   boolean leftTriggered = false;
   boolean rightTriggered = false;
   
@@ -307,19 +307,23 @@ public class Robot extends TimedRobot {
     rawReadRight = lineFollowRight.getValue();
 
 
-    // if (leftTriggered && rightTriggered) {
-    //   if (rawReadRight > rightThreshold) {
-    //     driveTrain.diffDrive.arcadeDrive(.5, .5);
-    //   } else if (rawReadLeft > leftThreshold) {
-    //     driveTrain.diffDrive.arcadeDrive(.5, -.5);
-    //   } else {
-    //     driveTrain.diffDrive.arcadeDrive(.75, 0);
-    //   }
-    // } else if (rawReadRight > rightThreshold) {
-    //   rightTriggered = true;
-    // } if (rawReadLeft > leftThreshold) {
-    //   leftTriggered = true;
-    // }
+    if (leftTriggered && rightTriggered) {
+      if (rawReadRight > rightThreshold) {
+        driveTrain.diffDrive.arcadeDrive(0, .3);
+      } else if (rawReadLeft > leftThreshold) {
+        driveTrain.diffDrive.arcadeDrive(0, -.3);
+      } else {
+        System.out.println("AAAAAAAAA");
+        driveTrain.diffDrive.arcadeDrive(.4, 0);
+      }
+    }
+    else if (rawReadRight > rightThreshold) {
+      rightTriggered = true;
+    } if (rawReadLeft > leftThreshold) {
+      leftTriggered = true;
+    } else {
+      driveTrain.diffDrive.arcadeDrive(.4, 0);
+    }
 
     System.out.print("L: " + rawReadLeft);
     System.out.println("R: " + rawReadRight);
