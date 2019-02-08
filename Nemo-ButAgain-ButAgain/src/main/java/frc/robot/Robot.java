@@ -46,6 +46,10 @@ public class Robot extends TimedRobot {
   // private static final String k_path_name = "Straight";
 
   public static AHRS ahrs;
+  double last_world_linear_accel_x;
+  double last_world_linear_accel_y;
+
+  final static double kCollisionThreshold_DeltaG = 0.4f;
 
   ShuffleboardTab tab;
 
@@ -95,6 +99,9 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotInit() { 
+
+    maxJerkX = 0;
+    maxJerkY = 0;
 
     ahrs = new AHRS(SPI.Port.kMXP); /* Alternatives:  SPI.Port.kMXP, I2C.Port.kMXP or SerialPort.Port.kUSB */
 
@@ -186,7 +193,7 @@ public class Robot extends TimedRobot {
 
     m_oi = new OI();
 
-    System.out.println(selectedProfile);
+    // System.out.println(selectedProfile);
 
     RobotMap.motorBL.setSelectedSensorPosition(0, 0, 10);
     RobotMap.motorBR.setSelectedSensorPosition(0, 0, 10);
@@ -213,7 +220,6 @@ public class Robot extends TimedRobot {
       System.out.println("ArcadeDrive = " + driveMode);
     }
 
-    System.out.println();
     SmartDashboard.putData("Gyro", ahrs);
     SmartDashboard.putNumber("Left Encoder", RobotMap.motorBL.getSelectedSensorPosition(0));
     SmartDashboard.putNumber("Right Encoder", RobotMap.motorBR.getSelectedSensorPosition(0));
@@ -309,24 +315,28 @@ public class Robot extends TimedRobot {
 
     if (leftTriggered && rightTriggered) {
       if (rawReadRight > rightThreshold) {
-        driveTrain.diffDrive.arcadeDrive(0, .3);
+        driveTrain.diffDrive.arcadeDrive(.5, .25);
+        System.out.println("Turning right");
       } else if (rawReadLeft > leftThreshold) {
-        driveTrain.diffDrive.arcadeDrive(0, -.3);
+        System.out.println("Turning left");
+        driveTrain.diffDrive.arcadeDrive(.5, -.55);
       } else {
         System.out.println("AAAAAAAAA");
-        driveTrain.diffDrive.arcadeDrive(.4, 0);
+        driveTrain.diffDrive.arcadeDrive(.4, -.15);
       }
     }
     else if (rawReadRight > rightThreshold) {
       rightTriggered = true;
+      driveTrain.diffDrive.arcadeDrive(.5, -.15);
     } if (rawReadLeft > leftThreshold) {
       leftTriggered = true;
+      driveTrain.diffDrive.arcadeDrive(.5, -.15);
     } else {
-      driveTrain.diffDrive.arcadeDrive(.4, 0);
+      driveTrain.diffDrive.arcadeDrive(.5, -.15);
     }
 
-    System.out.print("L: " + rawReadLeft);
-    System.out.println("R: " + rawReadRight);
+    // System.out.print("L: " + rawReadLeft);
+    // System.out.println("R: " + rawReadRight);
   }
 
   /**
@@ -355,7 +365,7 @@ public class Robot extends TimedRobot {
 		selectedProfile = prefs.getString("DriverName", "ethan");
 		teamColor = prefs.getBoolean("ColorPicker", true);
 		
-		System.out.println(selectedProfile);
+		// System.out.println(selectedProfile);
   }
 
   /**
@@ -395,10 +405,32 @@ public class Robot extends TimedRobot {
   /**
    * This function is called periodically during test mode.
    */
+double maxJerkX = 0;
+double maxJerkY = 0;
+
   @Override
   public void testPeriodic() {
+    boolean collisionDetected = false;
 
-    System.out.println("L: " + RobotMap.motorBL.getSelectedSensorPosition(0));
-		System.out.println("R: " + RobotMap.motorBR.getSelectedSensorPosition(0));
+    double curr_world_linear_accel_x = ahrs.getWorldLinearAccelX();
+    double currentJerkX = curr_world_linear_accel_x - last_world_linear_accel_x;
+    last_world_linear_accel_x = curr_world_linear_accel_x;
+    double curr_world_linear_accel_y = ahrs.getWorldLinearAccelY();
+    double currentJerkY = curr_world_linear_accel_y - last_world_linear_accel_y;
+    last_world_linear_accel_y = curr_world_linear_accel_y;
+    
+    if ( ( Math.abs(currentJerkX) > kCollisionThreshold_DeltaG ) ||
+          ( Math.abs(currentJerkY) > kCollisionThreshold_DeltaG) ) {
+        collisionDetected = true;
+    }
+
+    if(currentJerkX > maxJerkX) {
+      maxJerkX = currentJerkX;
+    }
+    if (currentJerkY > maxJerkY) {
+      maxJerkY = currentJerkY;
+    }
+    System.out.print(maxJerkX + "  ");
+    System.out.println(maxJerkY);
   }
 }
