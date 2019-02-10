@@ -46,8 +46,8 @@ public class Robot extends TimedRobot {
   // private static final String k_path_name = "Straight";
 
   public static AHRS ahrs;
-  double last_world_linear_accel_x;
-  double last_world_linear_accel_y;
+  double lastAccelX;
+  double lastAccelY;
 
   final static double kCollisionThreshold_DeltaG = 0.4f;
 
@@ -166,7 +166,7 @@ public class Robot extends TimedRobot {
       .withWidget(BuiltInWidgets.kToggleButton)
       .getEntry();
 
-      arcadeDrive = shuffTab
+    arcadeDrive = shuffTab
       .getLayout("Settings", BuiltInLayouts.kList)
       .withSize(2, 1)
       .withPosition(0, 2)
@@ -412,12 +412,13 @@ double maxJerkY = 0;
   public void testPeriodic() {
     boolean collisionDetected = false;
 
-    double curr_world_linear_accel_x = ahrs.getWorldLinearAccelX();
-    double currentJerkX = curr_world_linear_accel_x - last_world_linear_accel_x;
-    last_world_linear_accel_x = curr_world_linear_accel_x;
-    double curr_world_linear_accel_y = ahrs.getWorldLinearAccelY();
-    double currentJerkY = curr_world_linear_accel_y - last_world_linear_accel_y;
-    last_world_linear_accel_y = curr_world_linear_accel_y;
+    double currAccelX = ahrs.getWorldLinearAccelX();
+    double currentJerkX = currAccelX - lastAccelX;
+    lastAccelX = currAccelX;
+
+    double currAccelY = ahrs.getWorldLinearAccelY();
+    double currentJerkY = currAccelY - lastAccelY;
+    lastAccelY = currAccelY;
     
     if ( ( Math.abs(currentJerkX) > kCollisionThreshold_DeltaG ) ||
           ( Math.abs(currentJerkY) > kCollisionThreshold_DeltaG) ) {
